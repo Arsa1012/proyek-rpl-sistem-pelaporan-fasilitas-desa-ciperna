@@ -10,11 +10,13 @@
 
 | Field | Nilai |
 |-------|-------|
-| **Nama** | *(isi dengan nama Anda)* |
-| **NIM** | *(isi dengan NIM Anda)* |
-| **Kelompok** | *(isi dengan nomor kelompok Anda)* |
+| **Nama** | *(ARSYA AQILA SUMARDY)* |
+| **NIM** | *(41257093)* |
+| **Kelompok** | *(Arsya aqila Sumardy 41257093ade febrian 41257081
+Dhamar Dwi Syahbani 41257098
+Fahri Nur Alam 41257102* |
 | **Tema Topik Kelompok** | Smart Healthcare & Public Service AI / Sistem Informasi Pelayanan Publik Desa Berbasis AI *(sesuaikan dengan kesepakatan kelompok)* |
-| **Mata Kuliah** | Rekayasa Perangkat Lunak (TIKB2503021) — 4 SKS |
+| **Mata Kuliah** | Rekayasa Perangkat Lunak (TI-KIP-1A) — 4 SKS |
 
 > ⚠️ **PENTING:** Lengkapi field di atas sebelum pengumpulan. File ini adalah draf sesuai ketentuan BAB V panduan.
 
