@@ -169,7 +169,11 @@ Panduan lengkap:
 
 ## 8. Status CI/CD
 
-> **Belum dikonfigurasi.** Sesuai ketentuan Tahap 3 & rubrik (15%), tambahkan file `.github/workflows/ci.yml` dan inisialisasi repositori Git sebelum pengumpulan.
+> **Sudah dikonfigurasi.** Pipeline GitHub Actions tersedia di `.github/workflows/ci.yml` dan berjalan otomatis pada `push`/`pull request` ke branch `main`/`master`.
+
+Pipeline mencakup: checkout → setup Node.js 20 → `npm ci` → membuat environment CI → `prisma generate` & `migrate deploy` → TypeScript check → ESLint → unit test (`npm test`) → build Next.js (`next build`).
+
+Status hijau pipeline dapat diverifikasi di tab **Actions** repository GitHub. Untuk petunjuk push & cek CI, lihat `PANDUAN-GITHUB.md`.
 
 ---
 
