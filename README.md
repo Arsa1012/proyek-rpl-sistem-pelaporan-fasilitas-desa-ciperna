@@ -48,8 +48,8 @@ Aplikasi web ini adalah sistem pelaporan fasilitas umum Desa Ciperna yang meliba
 
 | Video | Durasi | Tautan |
 |-------|--------|--------|
-| **Video Progres 1** — PRD & Konsep Aplikasi | 3–5 menit | *(tempel tautan Yhttps://youtu.be/HGQ3bh-Ckk0?si=Ij_W3ATbfOzta3miouTube/Drive di sini)* |
-| **Video Progres 2** — Pemodelan UML & UI/UX | 5–7 menit | *(tempel tautan https://youtu.be/HGQ3bh-Ckk0?si=Ij_W3ATbfOzta3midi sini)* |
+| **Video Progres 1** — PRD & Konsep Aplikasi | 3–5 menit | *(https://youtu.be/HGQ3bh-Ckk0?si=Ij_W3ATbfOzta3mi)* |
+| **Video Progres 2** — Pemodelan UML & UI/UX | 5–7 menit | *(https://youtu.be/HGQ3bh-Ckk0?si=Ij_W3ATbfOzta3mi)* |
 | **Video Final** — Live Demo Aplikasi Web & Sistem Utuh | 8–12 menit | *(https://youtu.be/HGQ3bh-Ckk0?si=Ij_W3ATbfOzta3mi)* |
 
 **NOTED: UNTUK VIDEO ITU 1 LINK/1VIDEO DI GAbUNG**
