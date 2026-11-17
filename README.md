@@ -12,9 +12,7 @@
 |-------|-------|
 | **Nama** | *(ARSYA AQILA SUMARDY)* |
 | **NIM** | *(41257093)* |
-| **Kelompok** | *(Arsya aqila Sumardy 41257093ade febrian 41257081
-Dhamar Dwi Syahbani 41257098
-Fahri Nur Alam 41257102* |
+| **Kelompok** | *(Arsya aqila Sumardy 41257093ade febrian 41257081 Dhamar Dwi Syahbani 41257098 Fahri Nur Alam 41257102* |
 | **Tema Topik Kelompok** | Smart Healthcare & Public Service AI / Sistem Informasi Pelayanan Publik Desa Berbasis AI *(sesuaikan dengan kesepakatan kelompok)* |
 | **Mata Kuliah** | Rekayasa Perangkat Lunak (TI-KIP-1A) — 4 SKS |
 
@@ -50,9 +48,11 @@ Aplikasi web ini adalah sistem pelaporan fasilitas umum Desa Ciperna yang meliba
 
 | Video | Durasi | Tautan |
 |-------|--------|--------|
-| **Video Progres 1** — PRD & Konsep Aplikasi | 3–5 menit | *(tempel tautan YouTube/Drive di sini)* |
-| **Video Progres 2** — Pemodelan UML & UI/UX | 5–7 menit | *(tempel tautan di sini)* |
-| **Video Final** — Live Demo Aplikasi Web & Sistem Utuh | 8–12 menit | *(tempel tautan di sini)* |
+| **Video Progres 1** — PRD & Konsep Aplikasi | 3–5 menit | *(tempel tautan Yhttps://youtu.be/HGQ3bh-Ckk0?si=Ij_W3ATbfOzta3miouTube/Drive di sini)* |
+| **Video Progres 2** — Pemodelan UML & UI/UX | 5–7 menit | *(tempel tautan https://youtu.be/HGQ3bh-Ckk0?si=Ij_W3ATbfOzta3midi sini)* |
+| **Video Final** — Live Demo Aplikasi Web & Sistem Utuh | 8–12 menit | *(tempel[ ](https://youtu.be/HGQ3bh-Ckk0?si=Ij_W3ATbfOzta3mi)tautan di sini)* |
+
+**NOTED: UNTUK VIDEO ITU 1 LINK/1VIDEO DI GAbUNG**
 
 > Ketentuan video: wajib webcam aktif (wajah terlihat), resolusi minimal 720p, diunggah ke YouTube (Unlisted/Public) atau Google Drive (Anyone with the link), dan tautan dicantumkan di sini.
 
