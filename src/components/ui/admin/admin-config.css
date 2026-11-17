@@ -1,0 +1,903 @@
+/* ============================================================
+   Gaya untuk halaman konfigurasi Admin baru:
+   - Penerima Notifikasi WhatsApp (/admin/whatsapp-recipients)
+   - Konfigurasi Asisten AI    (/admin/ai-config)
+
+   Semua kelas memakai awalan `.cfg-` agar TIDAK bentrok dengan
+   `.btn`, `.card`, `.badge`, dll. dari stylesheet global.
+   ============================================================ */
+
+.cfg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.cfg-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cfg-item {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  background: var(--surface-color);
+}
+
+.cfg-item.is-active {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color) inset;
+}
+
+.cfg-item-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.cfg-item-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.98rem;
+  margin: 0;
+}
+
+.cfg-item-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.cfg-item-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+}
+
+.cfg-badges {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.cfg-alert {
+  border-radius: 10px;
+  padding: 0.75rem 0.95rem;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+  background: var(--muted-bg);
+  color: var(--text-primary);
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.cfg-alert.error {
+  color: var(--danger-text);
+  border-color: var(--danger-text);
+}
+
+.cfg-alert.success {
+  color: var(--success-text);
+  border-color: var(--success-text);
+}
+
+.cfg-alert.warning {
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+.cfg-alert ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.cfg-field {
+  margin-bottom: 0.9rem;
+}
+
+.cfg-field label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.3rem;
+}
+
+.cfg-field input,
+.cfg-field select,
+.cfg-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  background: var(--surface-solid, var(--surface-color));
+  color: var(--text-primary);
+}
+
+.cfg-field textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.cfg-hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.cfg-modal-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.cfg-kv {
+  display: grid;
+  grid-template-columns: minmax(120px, auto) 1fr;
+  gap: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.cfg-kv dt {
+  color: var(--text-secondary);
+}
+
+.cfg-kv dd {
+  margin: 0;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.cfg-model-list {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.cfg-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+
+/* ============================================================
+   Pemisahan SENDER (perangkat pengirim) vs RECIPIENT (nomor
+   tujuan notifikasi) + riwayat perubahan.
+   ============================================================ */
+
+.cfg-role-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.cfg-role-card {
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--text-secondary);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  background: var(--surface-color);
+}
+
+.cfg-role-card-focus {
+  border-left-color: var(--primary-color);
+}
+
+.cfg-role-title {
+  margin: 0 0 0.3rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.cfg-role-body {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.cfg-history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.cfg-history-item {
+  display: grid;
+  grid-template-columns: minmax(90px, auto) minmax(0, 1fr);
+  gap: 0.15rem 0.75rem;
+  align-items: baseline;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+}
+
+.cfg-history-action {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  white-space: nowrap;
+}
+
+.cfg-history-note {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.cfg-history-meta {
+  grid-column: 2;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+  .cfg-history-item {
+    grid-template-columns: 1fr;
+  }
+
+  .cfg-history-meta {
+    grid-column: 1;
+  }
+}
+
+/* ============================================================
+   Panel status AI + kartu provider + rekomendasi.
+   ============================================================ */
+
+.cfg-status-panel {
+  border-left: 4px solid var(--primary-color);
+}
+
+.cfg-status-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.cfg-status-title {
+  margin: 0;
+  font-size: 1.02rem;
+  color: var(--text-primary);
+}
+
+.cfg-badge-free {
+  color: var(--success-text);
+  border-color: var(--success-text);
+}
+
+.cfg-badge-paid {
+  color: var(--danger-text);
+  border-color: var(--danger-text);
+}
+
+.cfg-badge-unverified {
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+.cfg-badge-account-dependent {
+  color: #1d4ed8;
+  border-color: #3b82f6;
+}
+
+.cfg-badge-cadangan {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+/* Daftar model cadangan berurutan. */
+.cfg-fallback-list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cfg-fallback-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+}
+
+.cfg-fallback-index {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--muted-bg);
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.cfg-fallback-model {
+  flex: 1 1 180px;
+  min-width: 0;
+  word-break: break-all;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.cfg-fallback-actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.btn-xs {
+  padding: 0.22rem 0.5rem;
+  font-size: 0.74rem;
+  border-radius: 7px;
+}
+
+/* Modal rekomendasi (lebih lebar dari modal biasa). */
+.cfg-modal-wide {
+  max-width: 720px !important;
+}
+
+.cfg-modal-title {
+  margin: 0 0 0.85rem;
+  font-size: 1.08rem;
+  color: var(--text-primary);
+}
+
+.cfg-recommend-label {
+  margin: 0.9rem 0 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.cfg-recommend-facts {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.cfg-recommend-facts a {
+  color: var(--primary-color);
+  word-break: break-all;
+}
+
+/* ============================================================
+   Layout konfigurasi provider AI (panel kiri = daftar provider,
+   panel kanan = detail provider terpilih).
+   ============================================================ */
+
+.cfg-ai-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.cfg-ai-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1rem;
+  background: var(--surface-color);
+  position: sticky;
+  top: 1rem;
+}
+
+.cfg-ai-list-head {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.6rem;
+}
+
+.cfg-ai-list-title {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.cfg-ai-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cfg-ai-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-color);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  color: var(--text-primary);
+}
+
+.cfg-ai-item:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+}
+
+.cfg-ai-item.is-selected {
+  border-color: var(--primary-color);
+  background: var(--muted-bg);
+  box-shadow: 0 0 0 1px var(--primary-color) inset;
+}
+
+.cfg-ai-item:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.cfg-ai-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background: var(--surface-solid, var(--surface-color));
+  color: var(--primary-color);
+}
+
+.cfg-ai-item-icon-lg {
+  width: 42px;
+  height: 42px;
+}
+
+.cfg-ai-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.cfg-ai-item-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.cfg-ai-item-meta {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.cfg-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  margin-top: 0.45rem;
+  background: var(--text-secondary);
+  opacity: 0.55;
+}
+
+.cfg-dot-aktif {
+  background: var(--success-text);
+  opacity: 1;
+}
+.cfg-dot-cadangan {
+  background: var(--primary-color);
+  opacity: 1;
+}
+.cfg-dot-koneksi_berhasil {
+  background: var(--success-text);
+  opacity: 1;
+}
+.cfg-dot-koneksi_gagal {
+  background: var(--danger-text);
+  opacity: 1;
+}
+.cfg-dot-belum_diuji {
+  background: #f59e0b;
+  opacity: 1;
+}
+.cfg-dot-belum_dikonfigurasi {
+  background: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.cfg-ai-detail {
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1.15rem 1.25rem;
+  background: var(--surface-color);
+  min-width: 0;
+}
+
+.cfg-ai-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.cfg-ai-detail-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.cfg-ai-detail-title {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.cfg-ai-detail-desc {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  max-width: 56ch;
+}
+
+.cfg-section {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border-color);
+}
+
+.cfg-section-title {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.cfg-key-saved {
+  margin: 0 0 0.7rem;
+  font-size: 0.82rem;
+  color: var(--success-text);
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+  line-height: 1.5;
+}
+
+.cfg-key-missing {
+  color: var(--text-secondary);
+}
+
+.cfg-key-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+/* Pesan error DI DALAM modal.
+ *
+ * Diletakkan di bagian bawah kartu modal dan dibuat `sticky` terhadap area
+ * gulir kartu, sehingga:
+ *  - selalu berada di dalam dialog (terbaca screen reader),
+ *  - tetap terlihat saat kartu digulir,
+ *  - tidak pernah tertutup overlay (berbeda dengan pesan di luar modal yang
+ *    tertutup `.modal-overlay` + topbar/sidebar dashboard),
+ *  - aman pada viewport pendek maupun mobile (tanpa perhitungan vw). */
+.cfg-modal-error {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0 0 0.75rem;
+  background: var(--surface-solid, var(--surface-color));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+  border-width: 1px;
+  border-style: solid;
+}
+
+/* Overlay modal pada halaman ini digeser ke area konten (di kanan sidebar)
+   agar kartu modal & pesan error di dalamnya tidak tertutup sidebar fixed. */
+@media (min-width: 769px) {
+  .cfg-modal-overlay {
+    padding-left: var(--sidebar-width);
+  }
+}
+
+/* Petunjuk SENDER vs RECIPIENT di dalam modal. */
+.cfg-role-hint {
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  background: var(--bg-color);
+  margin: 0.25rem 0 1rem;
+}
+
+.cfg-role-hint-title {
+  margin: 0 0 0.3rem;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.cfg-role-hint-body {
+  margin: 0 0 0.3rem;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.cfg-role-hint-body:last-child {
+  margin-bottom: 0;
+}
+
+.cfg-steps {
+  margin: 0.6rem 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.cfg-steps li {
+  margin-bottom: 0.35rem;
+}
+
+.cfg-steps code {
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.1rem 0.35rem;
+  display: inline-block;
+  margin-top: 0.2rem;
+  word-break: break-word;
+}
+
+.cfg-key-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cfg-key-toggle {
+  flex: 0 0 auto;
+  padding: 0.5rem 0.7rem;
+}
+
+.cfg-model-select {
+  margin-bottom: 0.4rem;
+}
+
+.cfg-model-input {
+  width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   KATALOG MODEL LENGKAP (semua model terlihat + alasan penolakan)
+   -------------------------------------------------------------------------- */
+
+.cfg-catalog {
+  margin-top: 0.9rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--muted-bg);
+}
+
+.cfg-catalog-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.cfg-catalog-title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+
+.cfg-catalog-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 26rem;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--surface-solid, #fff);
+}
+
+.cfg-catalog-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.cfg-catalog-row:last-child {
+  border-bottom: none;
+}
+
+.cfg-catalog-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1 1 22rem;
+}
+
+.cfg-catalog-name {
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.cfg-catalog-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.cfg-catalog-reason {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.cfg-catalog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+}
+
+/* Alasan gagal pada kartu provider */
+.cfg-item-reason {
+  color: var(--danger-text);
+  max-width: 46rem;
+  word-break: break-word;
+}
+
+.cfg-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid var(--border-color);
+  background: var(--muted-bg);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.cfg-badge-inline {
+  padding: 0.1rem 0.45rem;
+  font-size: 0.64rem;
+}
+
+.cfg-badge-aktif {
+  color: var(--success-text);
+  border-color: var(--success-text);
+}
+
+.cfg-badge-cadangan {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.cfg-badge-ok {
+  color: var(--success-text);
+  border-color: var(--success-text);
+}
+
+.cfg-badge-gagal {
+  color: var(--danger-text);
+  border-color: var(--danger-text);
+}
+
+.cfg-badge-kosong,
+.cfg-badge-netral {
+  color: var(--text-secondary);
+}
+
+.cfg-ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.4rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+@media (max-width: 900px) {
+  /* Mobile: daftar provider menjadi pilihan ringkas di atas detail. */
+  .cfg-ai-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cfg-ai-list {
+    position: static;
+    padding: 0.85rem;
+  }
+
+  .cfg-ai-item {
+    padding: 0.6rem 0.65rem;
+  }
+
+  .cfg-ai-item-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .cfg-ai-actions .btn {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .cfg-grid {
+    grid-template-columns: 1fr;
+  }
+  .cfg-item-actions .btn {
+    flex: 1 1 auto;
+  }
+  .cfg-key-row {
+    flex-wrap: wrap;
+  }
+  .cfg-key-toggle {
+    flex: 0 0 auto;
+  }
+}
+

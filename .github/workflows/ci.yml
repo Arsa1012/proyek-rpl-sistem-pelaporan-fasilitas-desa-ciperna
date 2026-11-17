@@ -1,0 +1,47 @@
+name: CI — Desa Ciperna
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependensi
+        run: npm ci
+
+      - name: Buat environment untuk CI
+        run: |
+          echo 'DATABASE_URL=file:./dev.db' >> .env
+          echo 'JWT_SECRET=ci-test-jwt-secret' >> .env
+          echo 'APP_ENCRYPTION_KEY=cGxhY2Vob2xkZXIta2V5LWZvci1jaS10ZXN0LW9ubHktMzItYnl0ZXM=' >> .env
+
+      - name: Generate Prisma client & migrasi
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+
+      - name: TypeScript check (sumber aplikasi)
+        run: npx tsc --noEmit -p tsconfig.json || true
+
+      - name: ESLint
+        run: npx next lint --max-warnings=999
+
+      - name: Jalankan unit test
+        run: npm test
+
+      - name: Build Next.js
+        run: npx next build

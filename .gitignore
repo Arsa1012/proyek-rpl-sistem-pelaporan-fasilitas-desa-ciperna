@@ -1,0 +1,90 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Environment variables (berisi API key, JWT secret — jangan di-commit)
+.env
+.env*.local
+
+# Database SQLite lokal
+prisma/dev.db
+prisma/dev.db-journal
+
+# Uploads lokal
+public/uploads/
+
+# Logs & OS
+*.log
+.DS_Store
+desktop.ini
+Thumbs.db
+
+# Environment backups and secrets
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Build and cache
+build/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Temporary files and backups
+tmp/
+*.tmp
+.tmp*
+*.backup*
+backup_*
+*.bak
+
+# Local test artifacts
+admin-cookies.txt
+
+# Prisma local database and backups
+prisma/*.db
+prisma/*.db-*
+prisma/*.sqlite
+prisma/*.sqlite-*
+
+# Local AI and test data
+ai-chat.json
+ai-test.json
+chat.json
+chat2.json
+stats*.json
+test.json
+
+# Temporary inspection and helper files
+.check-*
+_check_*
+brace_check*
+probe_*
+tmp-audit-*
+test_escape*
+test_db.js
+~$*
+
+# Root-level temporary helper files
+/apply_migration.js
+/check_db.js
+/dash.html
+/fix_issue1.ps1
+/hitung.js
+/root.html
+/temp_modify.ps1
+/test-*.mjs
+/Laporan_Sistem_Pelaporan_Fasilitas_Desa_Ciperna.docx
+
+# Prisma database backup files
+prisma/*.db.bak*
+prisma/*.db.backup*
+prisma/*.db-*
+
+# Temporary scripts and tests
+scripts/_*tmp*
+tests/tmp_*

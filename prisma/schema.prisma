@@ -1,0 +1,622 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String?
+  photo     String?
+  // Soft-disable oleh Admin. false = akun tetap bisa LOGIN untuk melihat status,
+  // tetapi fitur utama (mis. membuat laporan / memulai tugas) dibatasi.
+  isActive  Boolean  @default(true)
+  // Alasan penonaktifan yang diisi Admin. Dikirim ke WhatsApp pemilik akun saat
+  // dinonaktifkan dan ditampilkan pada banner dashboard. Null = tidak nonaktif.
+  suspendReason String?
+  // Diisi true setelah Admin melakukan Reset Kata Sandi. Pengguna WAJIB
+  // mengganti kata sandi sementara saat login berikutnya. Tidak pernah
+  // menyimpan kata sandi/token dalam bentuk plaintext.
+  mustChangePassword Boolean @default(false)
+  // Waktu nomor WhatsApp akun ini TERVERIFIKASI lewat OTP (registrasi mandiri).
+  // Null/absen = akun lama atau belum pernah diverifikasi. Akun lama TIDAK
+  // dipaksa verifikasi ulang dan tetap dapat login.
+  phoneVerifiedAt DateTime?
+  role      String   @default("CITIZEN") // CITIZEN, ADMIN, OFFICER
+  // Data wilayah (RT/RW) — OPSIONAL agar akun lama tetap kompatibel.
+  // RT menyimpan relasi ke RW, sehingga RW diturunkan dari RT.
+  rtId      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  reports       Report[]       @relation("UserReports")
+  assignments   Assignment[]   @relation("OfficerAssignments")
+  notifications Notification[] @relation("UserNotifications")
+  rt            VillageRt?     @relation("UserRegion", fields: [rtId], references: [id])
+}
+
+model Report {
+  id              String   @id @default(uuid())
+  userId          String
+  title           String
+  description     String
+  category        String?
+  damageType      String?
+  severity        String?
+  location        String
+  latitude        Float?
+  longitude       Float?
+  photo           String?
+  aiResult        String?
+  aiConfidence    Float?
+  status          String   @default("SUBMITTED") // SUBMITTED, VERIFIED, REJECTED, ASSIGNED, IN_PROGRESS, COMPLETED
+  rejectionReason String?
+  // Mekanisme duplikat: ORIGINAL (mandiri/utama), POSSIBLE_DUPLICATE (kandidat, perlu review Admin),
+  // DUPLICATE (terkonfirmasi, menunjuk ke laporan utama), NOT_DUPLICATE (sudah ditinjau, bukan duplikat)
+  duplicateStatus     String    @default("ORIGINAL")
+  duplicateOfReportId String?
+  duplicateConfidence Float?
+  duplicateReason     String?
+  // Band hasil deteksi duplikat (transparan untuk Admin):
+  // "Kemungkinan duplikat" | "Perlu pemeriksaan admin". Null bila tidak ada kandidat.
+  duplicateBand       String?
+  duplicateReviewedBy String?
+  duplicateReviewedAt DateTime?
+  // Status proses ANALISIS AI — TERPISAH dari `status` operasional laporan.
+  // PENDING (belum), ANALYZING (sedang), SUCCESS (berhasil), FAILED (gagal),
+  // NEEDS_REVIEW (berhasil tetapi ditandai perlu ditinjau Admin).
+  aiStatus      String    @default("PENDING")
+  aiAnalyzedAt  DateTime?
+  aiModel       String?
+  aiError       String?
+  analysisCount Int       @default(0)
+  // Idempotency: kunci dari klien mencegah 1 kirim ganda menjadi 2 laporan.
+  // Nullable (SQLite mengizinkan banyak NULL pada indeks unik).
+  clientKey     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User                  @relation("UserReports", fields: [userId], references: [id])
+  assignments     Assignment[]
+  evidences       ReportEvidence[]
+  histories       ReportStatusHistory[]
+  analyses        ReportAnalysis[]
+
+  // Satu klien (userId) hanya boleh menyimpan satu laporan per clientKey.
+  // Bukan unique berdasarkan judul — judul sama tetap boleh untuk kejadian berbeda.
+  @@unique([userId, clientKey])
+  @@index([aiStatus])
+}
+
+// Riwayat ANALISIS AI per laporan (dipisah dari data laporan asli).
+// Analisis ulang menambah baris baru di sini — TIDAK membuat laporan baru.
+model ReportAnalysis {
+  id              String   @id @default(uuid())
+  reportId        String
+  // SUCCESS | FAILED
+  status          String
+  provider        String?  // gemini | mock
+  model           String?
+  category        String?
+  damageType      String?
+  severity        String?
+  confidence      Float?
+  summary         String?
+  urgencyReason   String?
+  // Disimpan sebagai JSON string (array) agar portabel di SQLite.
+  reasons         String?
+  facts           String?
+  missing         String?
+  recommendation  String?
+  suggestedAction String?
+  errorMessage    String?
+  durationMs      Int?
+  createdAt       DateTime @default(now())
+
+  report          Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId, createdAt])
+}
+
+model Assignment {
+  id          String    @id @default(uuid())
+  reportId    String
+  officerId   String
+  assignedAt  DateTime  @default(now())
+  completedAt DateTime?
+  notes       String?
+  // Pembatalan penugasan (soft-cancel, riwayat tetap tersimpan, tidak dihapus)
+  cancelledAt DateTime?
+  cancelReason String?
+  cancelledBy String?
+  // Review hasil oleh Admin: PENDING (menunggu), APPROVED, REVISION (minta perbaikan)
+  reviewStatus String?
+  reviewNotes  String?
+  reviewedAt   DateTime?
+  reviewedBy   String?
+  // Pilihan format pemberitahuan ke warga saat Admin menyetujui bukti:
+  // 'TEXT' (teks saja) atau 'TEXT_PHOTO' (teks + foto bukti via Fonnte).
+  // Nullable agar kompatibel dengan penugasan lama (dianggap 'TEXT').
+  notifyMode   String?
+
+  report      Report    @relation(fields: [reportId], references: [id])
+  officer     User      @relation("OfficerAssignments", fields: [officerId], references: [id])
+  evidences   ReportEvidence[]
+}
+
+model ReportEvidence {
+  id           String   @id @default(uuid())
+  reportId     String
+  // Penugasan (dan lewat itu, Petugas) yang mengunggah bukti ini.
+  // Nullable agar kompatibel dengan bukti lama sebelum kolom ini ada.
+  assignmentId String?
+  photo        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  report      Report      @relation(fields: [reportId], references: [id])
+  assignment  Assignment? @relation(fields: [assignmentId], references: [id])
+}
+
+model ReportStatusHistory {
+  id        String   @id @default(uuid())
+  reportId  String
+  status    String   // SUBMITTED, VERIFIED, REJECTED, ASSIGNED, IN_PROGRESS, COMPLETED
+  notes     String?  // Keterangan / alasan
+  actorName String?  // Nama publik aktor (misal: "Masyarakat (Pelapor)", "Admin Verifikator", "Petugas Lapangan")
+  actorRole String?  // CITIZEN, ADMIN, OFFICER, SYSTEM
+  createdAt DateTime @default(now())
+
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   // INFO, SUCCESS, WARNING, ERROR, ANNOUNCEMENT
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  // Tautan tujuan saat notifikasi diklik (mis. /pengumuman/<slug>). Null = tanpa tautan.
+  url       String?
+  // Bila notifikasi berasal dari pengumuman desa: id pengumuman sumbernya.
+  // Dipakai untuk memperbarui/mencabut notifikasi secara konsisten dan
+  // mencegah notifikasi ganda (lihat @@unique di bawah).
+  announcementId String?
+
+  user         User                 @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  announcement VillageAnnouncement?  @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  // Satu pengumuman hanya menghasilkan SATU notifikasi per pengguna.
+  // (SQLite mengizinkan banyak baris dengan announcementId NULL pada indeks unik.)
+  @@unique([userId, announcementId])
+  @@index([announcementId])
+}
+
+// Jejak audit tindakan administratif (nonaktifkan akun, persetujuan, dll.)
+model AdminAuditLog {
+  id           String   @id @default(uuid())
+  adminId      String
+  action       String   // mis. DISABLE_USER, ENABLE_USER, APPROVE_WORK, REQUEST_FIX
+  targetUserId String?
+  targetReportId String?
+  notes        String?
+  createdAt    DateTime @default(now())
+}
+
+// ============================================================================
+// PORTAL DESA — data profil, pemerintahan, layanan, dan pengumuman.
+// Semua model bersifat ADDITIF dan dikelola hanya oleh ADMIN.
+// Informasi resmi wajib memiliki status verifikasi + sumber sebelum tampil
+// sebagai data resmi di halaman publik dan dijawab AI.
+// ============================================================================
+
+// Profil desa disimpan sebagai SATU baris (id = "singleton"). Semua field
+// opsional agar Admin dapat melengkapi bertahap tanpa data fiktif.
+model VillageProfile {
+  id               String    @id @default("singleton")
+  name             String    @default("Desa Ciperna")
+  district         String    @default("Talun")
+  regency          String    @default("Cirebon")
+  province         String    @default("Jawa Barat")
+  postalCode       String?
+  address          String?
+  phone            String?
+  email            String?
+  mapLink          String?
+  mapEmbedUrl      String?
+  latitude         Float?
+  longitude        Float?
+  coordinateSource String?
+  heroPhoto        String?
+  history          String?
+  historySource    String?
+  geography        String?
+  potential        String?
+  demographics     String?
+  vision           String?
+  mission          String?
+  serviceHours     String?
+  // UNVERIFIED (belum ada dasar), PARTIAL (sebagian dari referensi awal),
+  // VERIFIED (sudah diverifikasi Admin/pemerintah desa).
+  dataStatus       String    @default("UNVERIFIED")
+  sourceUrl        String?
+  verifiedAt       DateTime?
+  updatedBy        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+// Perangkat desa / RT / RW. Tidak pernah dihapus permanen: gunakan
+// isActive=false + archivedAt untuk mengarsipkan (histori tetap tersimpan).
+model VillageOfficial {
+  id         String    @id @default(uuid())
+  name       String
+  position   String
+  // KEPALA_DESA, SEKRETARIAT, KASI, KAUR, RT_RW, LAINNYA
+  category   String    @default("LAINNYA")
+  level      Int       @default(1)
+  order      Int       @default(0)
+  area       String?
+  period     String?
+  photo      String?
+  isActive   Boolean   @default(true)
+  isVerified Boolean   @default(false)
+  sourceUrl  String?
+  verifiedAt DateTime?
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([isActive, level, order])
+}
+
+// Layanan/ informasi pelayanan desa (jam layanan, syarat, prosedur).
+model VillageService {
+  id           String    @id @default(uuid())
+  name         String
+  description  String?
+  requirements String?
+  procedure    String?
+  schedule     String?
+  contact      String?
+  link         String?
+  order        Int       @default(0)
+  isActive     Boolean   @default(true)
+  isVerified   Boolean   @default(false)
+  sourceUrl    String?
+  verifiedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([isActive, order])
+}
+
+// Pengumuman desa. Hanya isPublished=true yang tampil di publik.
+model VillageAnnouncement {
+  id          String    @id @default(uuid())
+  title       String
+  slug        String    @unique
+  content     String
+  excerpt     String?
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  authorId    String?
+  // Kategori bebas (mis. "Informasi", "Kegiatan"). Opsional, dipakai filter publik.
+  category    String?
+  // Foto sampul (path "/uploads/..." atau URL https). Opsional.
+  coverPhoto  String?
+  // Daftar foto tambahan sebagai JSON array path. Disimpan sebagai metadata teks
+  // kecil (bukan biner di DB) — berkasnya ada di penyimpanan /uploads.
+  photos      String?
+  // Target penerima notifikasi: ALL (masyarakat + petugas), CITIZEN, OFFICER.
+  target      String    @default("ALL")
+  // Bila true, saat jatuh tempo sistem mengirim notifikasi WhatsApp via Fonnte
+  // (di samping notifikasi dalam aplikasi). Terpisah dari status publikasi.
+  notifyWhatsApp Boolean @default(false)
+  // Jumlah PERCOBAAN kirim WhatsApp untuk pengumuman INI (satu penerima yang
+  // dicoba = 1). Dibatasi 15 oleh server (ANNOUNCEMENT_WHATSAPP_LIMIT) agar
+  // tidak ada pengiriman massal tak terkendali. BUKAN counter global.
+  waSendCount Int       @default(0)
+  // Masa berlaku (opsional). validUntil < validFrom ditolak.
+  validFrom   DateTime?
+  validUntil  DateTime?
+  // Arsip & soft-delete: histori tetap tersimpan, tidak pernah dihapus permanen.
+  archivedAt  DateTime?
+  deletedAt   DateTime?
+  deletedBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  notifications Notification[]
+  deliveries    AnnouncementDelivery[]
+
+  @@index([isPublished, publishedAt])
+  @@index([deletedAt, archivedAt])
+}
+
+// Status pengiriman notifikasi WhatsApp PENGUMUMAN, per penerima.
+// Satu pengumuman = maksimal satu baris per penerima (idempoten).
+// Tidak menyimpan token, isi pesan penuh, atau nomor lengkap (hanya samaran).
+model AnnouncementDelivery {
+  id                String    @id @default(uuid())
+  announcementId    String
+  userId            String
+  toMasked          String?
+  status            String    @default("PENDING") // PENDING, SENT, FAILED, SKIPPED
+  providerMessageId String?
+  error             String?
+  attempts          Int       @default(0)
+  sentAt            DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  announcement VillageAnnouncement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([announcementId, status])
+}
+
+// ============================================================================
+// MASTER DATA WILAYAH — RW dan RT.
+// Wilayah BUKAN role pengguna: warga tetap role CITIZEN. Data wilayah hanya
+// menautkan akun ke RT/RW untuk keperluan administratif & statistik.
+// Tidak ada penghapusan permanen: wilayah dinonaktifkan (isActive=false).
+// ============================================================================
+
+model VillageRw {
+  id        String   @id @default(uuid())
+  number    String   @unique // nomor RW, mis. "01"
+  name      String? // nama/label opsional
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rts VillageRt[]
+}
+
+model VillageRt {
+  id        String   @id @default(uuid())
+  rwId      String
+  number    String // nomor RT, mis. "03"
+  name      String? // nama/label opsional
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rw    VillageRw @relation(fields: [rwId], references: [id])
+  users User[]    @relation("UserRegion")
+
+  // Satu nomor RT unik HANYA di dalam RW-nya (RW lain boleh punya RT nomor sama).
+  @@unique([rwId, number])
+  @@index([rwId, isActive])
+}
+
+// Status pengiriman notifikasi WhatsApp Admin (idempoten via dedupeKey).
+// Tidak menyimpan token, isi pesan penuh, atau nomor lengkap (hanya samaran).
+model WhatsAppLog {
+  id                String   @id @default(uuid())
+  dedupeKey         String   @unique // mis. "register:<userId>", "report:<reportId>"
+  kind              String   // REGISTER, REPORT, TEXT, TEMPLATE
+  toMasked          String   // mis. "6283****"
+  status            String   // SENT, FAILED
+  providerMessageId String?
+  error             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Konfigurasi Fonnte yang dapat diubah Admin melalui dashboard.
+// Disimpan di database agar bisa diganti tanpa mengubah .env atau merestart server.
+model FonnteConfig {
+  id        String   @id @default(uuid())
+  token     String   // Token API Fonnte (lama, plaintext). Dibaca server-side, tidak pernah ditampilkan di UI mentah.
+  // Token TERENKRIPSI (AES-256-GCM, src/lib/secretCrypto.ts). Inilah sumber
+  // utama yang dipakai sistem. Kolom `token` di atas dipertahankan sebagai
+  // jalur transisi & sumber data migrasi, dan TIDAK dihapus.
+  tokenCipher String? // ciphertext v1:iv:tag:ct
+  adminPhone String   // Nomor admin tujuan (08xx atau 628xx), untuk referensi perangkat PENGIRIM.
+  //           Nomor PENERIMA notifikasi dikelola terpisah di NotificationRecipient.
+  deviceName String? // Nama perangkat, mis. "WhatsApp A", "WhatsApp C"
+  // validasi terakhir dari API Fonnte
+  lastValidation DateTime?  // waktu terakhir token/divice divalidasi via API
+  isActive    Boolean  @default(true) // flag aktif; nonaktifkan bila token expired/divice putus
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+}
+
+  // ============================================================================
+  // PENERIMA NOTIFIKASI WHATSAPP ADMIN.
+  //
+  // TERPISAH dari FonnteConfig (perangkat PENGIRIM). Nomor pengirim Fonnte
+  // tidak otomatis menjadi nomor penerima, dan sebaliknya.
+  //
+  // Aturan:
+  //  - Satu nomor berstatus AKTIF pada satu waktu. Dijamin partial UNIQUE
+  //    INDEX (dibuat di migrasi SQL) + transaksi atomik di service layer.
+  //  - Nomor tidak pernah dihapus permanen; nonaktif = isActive=false sehingga
+  //    dapat diaktifkan kembali.
+  //  - Tidak storing kredensial apa pun.
+  // ============================================================================
+  model NotificationRecipient {
+    id        String   @id @default(uuid())
+    label     String              // "Admin Utama", "Admin Backup"
+    phone     String              // 62xxxxxxxxxx (sudah dinormalisasi)
+    isActive  Boolean  @default(false)
+    notes     String?             // catatan internal (mis. asal migrasi)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([isActive])
+    @@index([phone])
+  }
+
+  // ============================================================================
+  // KONFIGURASI PROVIDER AI (OpenRouter / Google Gemini / Groq).
+  //
+  // Aturan:
+  //  - API Key disimpan TERENKRIPSI (AES-256-GCM). Ciphertext tidak pernah
+  //    dikirim ke browser; UI hanya melihat flag hasApiKey.
+  //  - Chain model: primaryModel -> fallbackModels[0] -> fallbackModels[1] ...
+  //    Fallback bersifat EKSPLISIT (diatur Admin) dan dilaporkan di meta.
+  //  - Satu provider boleh berstatus AKTIF pada satu waktu (partial UNIQUE
+  //    INDEX + transaksi atomik).
+  // ============================================================================
+  model AiProvider {
+    id             String   @id @default(uuid())
+    provider       String              // "openrouter" | "gemini" | "groq"
+    label          String              // "OpenRouter Utama"
+    apiKeyCipher   String?             // ciphertext AES-256-GCM; null = belum diisi
+    isActive       Boolean  @default(false)
+    primaryModel   String?             // model utama pilihan Admin
+    fallbackModels String?             // JSON array model cadangan (urutan = prioritas)
+    models         String?             // JSON array kandidat model (hasil katalog)
+    lastValidation DateTime?
+    lastError      String?             // kode aman (bukan pesan mentah)
+    // Penjelasan kegagalan yang aman & mudah dipahami: kategori error, HTTP
+    // status, serta model & provider yang dicoba. Tanpa secret.
+    lastErrorDetail String?
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+
+    @@unique([provider])
+    @@index([isActive])
+  }
+
+  // ============================================================================
+  // KEBIJAKAN MODEL GRATIS (bukti status gratis per model).
+  //
+  // Satu baris = satu model pada satu provider.
+  //  - freeStatus : VERIFIED_FREE (bukti resmi ada) | UNVERIFIED (belum ada bukti)
+  //                 | PAID (bukti resmi: berbayar).
+  //  - evidenceUrl: halaman resmi provider yang menyatakan status tersebut.
+  //  - verifiedAt : kapan bukti itu diambil.
+  //
+  // ATURAN PEMAKAIAN:
+  //  - Hanya model VERIFIED_FREE yang boleh dipakai sebagai model utama maupun
+  //    sebagai fallback otomatis.
+  //  - UNVERIFIED/PAID TIDAK PERNAH dipakai otomatis (fail-closed).
+  //  - Tabel ini hanya berisi metadata publik (id model + sumber bukti).
+  //    TIDAK PERNAH memuat API Key, ciphertext, atau isi secret.
+  // ============================================================================
+  model AiModelPolicy {
+    id          String   @id @default(uuid())
+    provider    String              // "openrouter" | "gemini" | "groq"
+    modelId     String              // id model persis seperti di katalog provider
+    freeStatus  String   @default("UNVERIFIED") // VERIFIED_FREE | ACCOUNT_DEPENDENT | UNVERIFIED | PAID
+    evidenceUrl String?             // sumber bukti resmi
+    verifiedAt  DateTime?            // kapan bukti diambil
+    notes       String?              // ringkasan bukti (tanpa secret)
+    // 'catalog' = dari katalog resmi provider | 'manual' = diverifikasi Admin
+    // dengan URL bukti domain resmi. Verifikasi otomatis TIDAK menimpa
+    // entri 'manual' (kecuali bila katalog menyatakan model itu berbayar).
+    verificationSource String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@unique([provider, modelId])
+    @@index([provider])
+    @@index([freeStatus])
+  }
+
+
+// ============================================================================
+// REGISTRASI WARGA + VERIFIKASI OTP WHATSAPP — DATA SEMENTARA.
+// Akun User BARU hanya dibuat SETELAH OTP terverifikasi (tidak ada akun
+// setengah jadi, sehingga akun belum terverifikasi tidak bisa login karena
+// memang belum ada). Yang disimpan di sini:
+//   - passwordHash : hash bcrypt (mekanisme autentikasi proyek) — BUKAN teks biasa
+//   - otpHash      : HMAC-SHA256 dari kode OTP — kode mentah tidak pernah disimpan
+// Baris di sini bersifat sementara: dihapus setelah verifikasi berhasil atau
+// dibersihkan setelah kedaluwarsa.
+// ============================================================================
+model RegistrationOtp {
+  id           String   @id @default(uuid())
+  name         String
+  // Satu email hanya boleh punya satu pendaftaran tertunda (mencegah ganda).
+  email        String   @unique
+  passwordHash String
+  // Satu nomor WhatsApp hanya boleh punya satu pendaftaran tertunda.
+  phone        String   @unique
+  rtId         String?
+  otpHash      String
+  expiresAt    DateTime
+  attempts     Int      @default(0)
+  resendCount  Int      @default(0)
+  lastSentAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([expiresAt])
+}
+
+// ============================================================================
+// TOKEN AKTIVASI & RESET KATA SANDI — token sekali pakai.
+// HANYA hash token (SHA-256) yang disimpan; token mentah tidak pernah tersimpan
+// di database maupun log. Token memiliki masa berlaku dan hangus setelah dipakai.
+// ============================================================================
+model AccountToken {
+  id        String    @id @default(uuid())
+  userId    String
+  // ACTIVATION (aktivasi akun petugas baru) atau RESET_PASSWORD (lupa kata sandi).
+  purpose   String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdBy String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+}
+
+// ============================================================================
+// AI MEMORY / PUSAT PENGETAHUAN AI — informasi yang diekstrak dari percakapan
+// semua role (masyarakat, petugas, admin) dan disimpan untuk digunakan AI
+// dalam percakapan berikutnya.
+//
+// Prinsip:
+// - Setiap entri menyimpan judul, isi, kategori, sumber, waktu, pengirim,
+//   dan status verifikasi.
+// - Belum diverifikasi = dugaan/laporan, bukan fakta resmi.
+// - Admin dapat memverifikasi atau menolak melalui menu Pusat Pengetahuan AI.
+// - Akses dibatasi sesuai role; data pribadi dilindungi.
+// - Tidak ada email, telepon, password, atau isi laporan mentah disini.
+// ============================================================================
+model AiKnowledgeEntry {
+  id             String   @id @default(uuid())
+  title          String
+  content        String
+  // KELUHAN | SARAN | FASILITAS | KINERJA_PETUGAS | KEGIATAN_DESA | LAINNYA
+  category       String   @default("LAINNYA")
+  // CHAT | REPORT | MANUAL | SYSTEM
+  sourceType     String   @default("CHAT")
+  sourceId       String?  // referensi ke chat message, report id, dll.
+  sourceRole     String   // CITIZEN | ADMIN | OFFICER
+  sourceUserId   String?  // siapa yang memberikan informasi
+  sourceUserName String?  // nama pengirim untuk tampilan
+  verified       Boolean  @default(false)
+  verifiedBy     String?  // admin yang memverifikasi
+  verifiedAt     DateTime?
+  verificationNotes String?
+  // TRUE = hanya Admin yang dapat melihat (data pribadi / sensitif)
+  isPrivate      Boolean  @default(false)
+  tags           String?  // JSON array string
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([category, verified])
+  @@index([sourceRole])
+  @@index([verified])
+  @@index([createdAt])
+}

@@ -1,0 +1,13 @@
+-- SUMBER VERIFIKASI STATUS GRATIS (katalog resmi vs manual oleh Admin).
+--
+-- MIGRASI ADDITIF: satu kolom NULLABLE baru pada tabel yang sudah ada.
+--  - Tidak menghapus, tidak menimpa, tidak mengubah data lama.
+--
+-- Nilai yang mungkin: 'catalog' (dari katalog resmi provider) atau 'manual'
+-- (diverifikasi Admin dengan bukti URL domain resmi). NULL = belum jelas.
+--
+-- PENTING: kolom ini mencegah verifikasi otomatis berikutnya MENIMPA
+-- verifikasi manual Admin (mis. Gemini yang katalog resminya tidak
+-- mencantumkan harga). Tanpa kolom ini, refresh harian akan mengembalikan
+-- model manual ke status UNVERIFIED.
+ALTER TABLE "AiModelPolicy" ADD COLUMN "verificationSource" TEXT;
