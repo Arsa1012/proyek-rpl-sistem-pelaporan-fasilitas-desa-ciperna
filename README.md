@@ -12,7 +12,12 @@
 |-------|-------|
 | **Nama** | *(ARSYA AQILA SUMARDY)* |
 | **NIM** | *(41257093)* |
-| **Kelompok** | *(Arsya aqila Sumardy 41257093ade febrian 41257081 Dhamar Dwi Syahbani 41257098 Fahri Nur Alam 41257102* |
+| No. | Nama Anggota | NIM |
+|---|---|---|
+| 1 | Arsya Aqila Sumardy | 41257093 |
+| 2 | Ade Febrian | 41257081 |
+| 3 | Dhamar Dwi Syahbani | 41257098 |
+| 4 | Fahri Nur Alam | 41257102 |
 | **Tema Topik Kelompok** | Smart Healthcare & Public Service AI / Sistem Informasi Pelayanan Publik Desa Berbasis AI *(sesuaikan dengan kesepakatan kelompok)* |
 | **Mata Kuliah** | Rekayasa Perangkat Lunak (TI-KIP-1A) — 4 SKS |
 
